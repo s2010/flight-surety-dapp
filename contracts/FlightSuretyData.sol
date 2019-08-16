@@ -12,6 +12,25 @@ contract FlightSuretyData {
     address private contractOwner;                                      // Account used to deploy contract
     bool private operational = true;                                    // Blocks all state changes throughout the contract if false
 
+    struct Airline {
+        string name;
+        bool isRegistered;
+        bool isFunded;
+        uint256 fund;
+    }
+
+    struct PassengerPurchase {
+        uint256 balance;
+        uint256 insuranceCredit;
+    }
+
+    mapping (address => Airline) airlines;
+    mapping(address => uint256) authorizedContracts;
+    uint256 private airlinesCount;
+    uint256 private fundedAirlinesCount;
+
+    mapping (address => mapping(bytes32 => PassengerPurchase)) passengers;
+
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
@@ -23,10 +42,20 @@ contract FlightSuretyData {
     */
     constructor
                                 (
+                                    address _firstAirline,
+                                    string _firstAirlineName
                                 ) 
                                 public 
     {
         contractOwner = msg.sender;
+
+        airlines[_firstAirline].isRegistered = true;
+        airlines[_firstAirline].name = _firstAirlineName;
+        airlines[_firstAirline].fund = 0;
+        
+
+        airlinesCount = 1;
+        fundedAirlinesCount = 0;
     }
 
     /********************************************************************************************/
@@ -53,6 +82,11 @@ contract FlightSuretyData {
     modifier requireContractOwner()
     {
         require(msg.sender == contractOwner, "Caller is not contract owner");
+        _;
+    }
+
+    modifier isAuthorizedCaller() {        
+        require(authorizedContracts[msg.sender] == 1, "Caller is not authorized");
         _;
     }
 
@@ -89,9 +123,40 @@ contract FlightSuretyData {
         operational = mode;
     }
 
+    function authorizeCaller(address appContract) external requireContractOwner {
+        authorizedContracts[appContract] = 1;
+    }
+
+    function deauthorizeCaller(address appContract) external requireContractOwner {
+        delete authorizedContracts[appContract];
+    }
+
     /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
+
+    function getAirlineCount() public view returns(uint256) {
+        return airlinesCount;
+    }
+
+    function getFundedAirlineCount() external view returns(uint256) {
+        return fundedAirlinesCount;
+    }
+
+    function getAirline(address _airlineAddress) 
+        external 
+        view 
+        isAuthorizedCaller 
+        returns(string name, bool isRegistered, bool isFunded) 
+    {
+        name = airlines[_airlineAddress].name;
+        isRegistered = airlines[_airlineAddress].isRegistered;
+        isFunded = airlines[_airlineAddress].isFunded;
+    }
+
+    function isAirline(address _airline) external view returns(bool){
+        return airlines[_airline].isRegistered;
+    }
 
    /**
     * @dev Add an airline to the registration queue
@@ -99,49 +164,70 @@ contract FlightSuretyData {
     *
     */   
     function registerAirline
-                            (   
+                            (
+                                address airlineAddress,
+                                string name
                             )
                             external
-                            pure
-    {
+    {        
+        airlines[airlineAddress].isRegistered = true;
+        airlines[airlineAddress].name = name;
+
+        airlinesCount = airlinesCount.add(1);        
     }
 
+    function getPassengerPurchase(address passengerAddress, bytes32 flight) external view returns(uint256 balance, uint256 insuranceCredit)
+    {
+        balance = passengers[passengerAddress][flight].balance;
+        insuranceCredit = passengers[passengerAddress][flight].insuranceCredit;
+    }
 
    /**
     * @dev Buy insurance for a flight
     *
     */   
     function buy
-                            (                             
+                            (
+                                address passengerAddress,
+                                bytes32 flight
                             )
                             external
                             payable
-    {
-
+    {        
+        passengers[passengerAddress][flight] = PassengerPurchase(msg.value, 0 ether);
     }
 
     /**
      *  @dev Credits payouts to insurees
     */
-    function creditInsurees
+    function creditInsurance
                                 (
+                                    address passengerAddress,
+                                    uint256 amount,
+                                    bytes32 flight
                                 )
-                                external
-                                pure
+                                external                                
     {
+        passengers[passengerAddress][flight].insuranceCredit = amount;
+    }
+
+    function withdraw(address passengerAddress, bytes32 flight) external {
+        uint256 amount = passengers[passengerAddress][flight].insuranceCredit;
+
+        require(amount > 0, "No insurance credit");
+
+        passengers[passengerAddress][flight].insuranceCredit = 0;
+
+        passengerAddress.transfer(amount);
     }
     
+    function fundAirline(address airline) external payable {
+        airlines[airline].fund = msg.value.add(airlines[airline].fund);
 
-    /**
-     *  @dev Transfers eligible payout funds to insuree
-     *
-    */
-    function pay
-                            (
-                            )
-                            external
-                            pure
-    {
+        if(airlines[airline].fund >= 10) {
+            airlines[airline].isFunded = true;
+            fundedAirlinesCount = fundedAirlinesCount.add(1);
+        }
     }
 
    /**
@@ -150,10 +236,10 @@ contract FlightSuretyData {
     *
     */   
     function fund
-                            (   
+                            (
                             )
                             public
-                            payable
+                            payable                            
     {
     }
 
