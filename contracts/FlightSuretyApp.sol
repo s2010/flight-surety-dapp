@@ -19,15 +19,16 @@ contract FlightSuretyApp {
     uint8 private constant STATUS_CODE_LATE_WEATHER = 30;
     uint8 private constant STATUS_CODE_LATE_TECHNICAL = 40;
     uint8 private constant STATUS_CODE_LATE_OTHER = 50;
-    uint256 private constant AIRLINE_VOTING_THRESHOLD = 4;
-    uint256 public constant MAX_FLIGHT_INSURACE = 1 ether;
+
+    uint256 public constant INSURACE_MAX = 1 ether;
+    uint256 private constant AIRLINE_VOTING_COUNT = 4;
 
     address private contractOwner;          // Account used to deploy contract
 
     struct Flight {
         bool isRegistered;
         uint8 statusCode;
-        uint256 updatedTimestamp;
+        uint256 updatedTimestamp;        
         address airline;
     }
     mapping(bytes32 => Flight) private flights;
@@ -68,29 +69,34 @@ contract FlightSuretyApp {
     modifier requireFundedAirline(address airline) {
         bool isFunded;
         (,,isFunded) = dataContract.getAirline(airline);
-        require(isFunded, "Airline is not funded");
+        require(isFunded, "Airline does not exist");
         _;
     }
 
     modifier requireNotRegisteredAirline(address airline) {
         bool isRegistered = true;
         (,isRegistered,) = dataContract.getAirline(airline);
-        require(!isRegistered, "Airline already registered");
+        require(!isRegistered, "Airline is registered");
         _;
     }
 
-    modifier requireVotingThreshold()
+    modifier requireVotingCount()
     {
-        require(dataContract.getAirlineCount() >= AIRLINE_VOTING_THRESHOLD, "Less than voting threshold");
+        require(dataContract.getAirlineCount() >= AIRLINE_VOTING_COUNT, "Less than voting count");
         _;
     }
 
-    modifier requireNoVotingThreshold()
+    modifier requireNoVotingCount()
     {
-        require(dataContract.getAirlineCount() < AIRLINE_VOTING_THRESHOLD, "More than voting threshold");
+        require(dataContract.getAirlineCount() < AIRLINE_VOTING_COUNT, "More than voting count");
         _;
     }
-
+    // function airlineRegistrationNeedsVoting()
+    // public
+    // returns(bool)
+    // {
+    //     return dataContract.getFundedAirlinesCount > 4;
+    // }
     modifier requirePendingAirline(address airline)
     {
         require(pendingAirlines[airline].pending == 1, "Airline is not pending registeration");
@@ -155,7 +161,7 @@ contract FlightSuretyApp {
     function voteForAirline(address airline)
         external
         requireFundedAirline(msg.sender)
-        requireVotingThreshold
+        requireVotingCount
         requirePendingAirline(airline)
         requireNotRegisteredAirline(airline)
     {
@@ -169,7 +175,7 @@ contract FlightSuretyApp {
             }
         }
 
-        require(!isDuplicate, "Already voted!");
+        require(!isDuplicate, "voted before");
 
         votes[airline].push(msg.sender);
 
@@ -195,7 +201,7 @@ contract FlightSuretyApp {
         requireNotRegisteredAirline(airlineAddress)
 
     {
-        if(dataContract.getAirlineCount() < AIRLINE_VOTING_THRESHOLD)
+        if(dataContract.getAirlineCount() < AIRLINE_VOTING_COUNT)
         {
             dataContract.registerAirline(airlineAddress, name);
         }
@@ -216,7 +222,7 @@ contract FlightSuretyApp {
 
     function buyInsurance(address airline, string flight, uint256 timestamp) external payable
     {
-        require(msg.value <= MAX_FLIGHT_INSURACE, "Exceeded max allowed insurance amount");
+        require(msg.value <= INSURACE_MAX, "Exceeded The maximum allowed insurance amount");
 
         bytes32 key = getFlightKey(airline, flight, timestamp);
 
@@ -300,7 +306,7 @@ contract FlightSuretyApp {
 
         bytes32 flightKey = getFlightKey(airline, flight, timestamp);
         require(flights[flightKey].isRegistered, "Flight is not registered");
-        require(flights[flightKey].statusCode == STATUS_CODE_UNKNOWN, 'Flight has landed!');
+        require(flights[flightKey].statusCode == STATUS_CODE_UNKNOWN, 'Flight has landed');
 
         uint8 index = getRandomIndex(msg.sender);
 
@@ -388,9 +394,6 @@ contract FlightSuretyApp {
 
         return oracles[msg.sender].indexes;
     }
-
-
-
 
     // Called by oracle when a response is available to an outstanding request
     // For the response to be accepted, there must be a pending request that is open

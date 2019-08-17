@@ -1,3 +1,4 @@
+
 var Test = require('../config/testConfig.js');
 var BigNumber = require('bignumber.js');
 
@@ -23,7 +24,7 @@ contract('Flight Surety Tests', async (accounts) => {
 
 
 
-    it(`(multiparty) has correct initial isOperational() value`, async function () {
+    it(`✈️ ✅ (multiparty) has correct initial isOperational() value`, async function () {
 
         // Get operating status
         let status = await config.flightSuretyData.isOperational.call();
@@ -31,7 +32,7 @@ contract('Flight Surety Tests', async (accounts) => {
 
     });
 
-    it(`(multiparty) can block access to setOperatingStatus() for non-Contract Owner account`, async function () {
+    it(`✈️ 🙅🏻‍♀️(multiparty) can block access to setOperatingStatus() for non-Contract Owner account`, async function () {
 
         // Ensure that access is denied for non-Contract Owner account
         let accessDenied = false;
@@ -46,7 +47,7 @@ contract('Flight Surety Tests', async (accounts) => {
 
     });
 
-    it(`(multiparty) can allow access to setOperatingStatus() for Contract Owner account`, async function () {
+    it(`✈️ 👏🏻 (multiparty) can allow access to setOperatingStatus() for Contract Owner account`, async function () {
 
         // Ensure that access is allowed for Contract Owner account
         let accessDenied = false;
@@ -59,7 +60,7 @@ contract('Flight Surety Tests', async (accounts) => {
 
     });
 
-    it(`(multiparty) can block access to functions using requireIsOperational when operating status is false`, async function () {
+    it(`✈️ 🙅🏻‍♀️(multiparty) can block access to functions using requireIsOperational when operating status is false`, async function () {
 
         await config.flightSuretyData.setOperatingStatus(false);
 
@@ -76,13 +77,13 @@ contract('Flight Surety Tests', async (accounts) => {
 
     });
 
-    it('(airline) first airline was registered', async () => {
+    it('✈️ ✅ (airline) first airline was registered', async () => {
         let result = await config.flightSuretyData.isAirline(config.firstAirline);
 
         assert.equal(result, true, "First airline was registered");
     });
 
-    it('(airline) cannot register an Airline using registerAirline() if it is not funded', async () => {
+    it('✈️ 📝 (airline) cannot register an Airline using registerAirline() if it is not funded', async () => {
 
         // ARRANGE
         let newAirline = accounts[2];
@@ -108,7 +109,7 @@ contract('Flight Surety Tests', async (accounts) => {
 
     });
 
-    it('(multiparty) Only existing funded airline may register a new airline', async () => {
+    it('✈️ 🔮 (multiparty) Only existing funded airline may register a new airline', async () => {
 
         let result = false;
         let newAirline = accounts[2];
@@ -132,7 +133,7 @@ contract('Flight Surety Tests', async (accounts) => {
         assert.equal(result, true, 'Airline should register another one if it is funded');
     });
 
-    it('(airline) fail registering duplicate airline', async () => {
+    it('✈️ ❌(airline) fail registering duplicate airline', async () => {
         let result = true;
 
         try {
@@ -155,7 +156,7 @@ contract('Flight Surety Tests', async (accounts) => {
         assert.equal(result, true, 'Should not register duplicate airline');
     });
 
-    it('(mutliparty) 5th airline should not be registered if less than 50% votes', async () => {
+    it('✈️ 📝(mutliparty) 5th airline should not be registered if less than 50% votes', async () => {
 
         let result = true;
         let votingAirlines = accounts.slice(3, 5);
@@ -183,7 +184,7 @@ contract('Flight Surety Tests', async (accounts) => {
         assert.equal(result, false, 'Airline should not be registered if less than 50% votes');
     });
 
-    it('(mutliparty) 5th airline should be registered if more than 50% votes', async () => {
+    it('✈️ 📝(mutliparty) 5th airline should be registered if more than 50% votes', async () => {
         let result = false;
         let testAirline = accounts[6];
 
@@ -202,7 +203,7 @@ contract('Flight Surety Tests', async (accounts) => {
         assert.equal(result, true, 'Airline should not be registered if less than 50% votes');
     });
 
-    it('(Flight) funded airlines are able to register flights', async () => {
+    it('✈️ ✅ (Flight) funded airlines are able to register flights', async () => {
         let result = true;
 
         try {
@@ -217,7 +218,7 @@ contract('Flight Surety Tests', async (accounts) => {
         assert.equal(result, true, 'Funded airlines should be able to register flight');
     });
 
-    it('(oracle) register 20 oracles', async () => {
+    it('✈️ 🧬(oracle) register 20 oracles', async () => {
         let result = true;
 
         for (let i = 0; i < oracles.length; i++) {
@@ -236,7 +237,7 @@ contract('Flight Surety Tests', async (accounts) => {
         assert.equal(result, true, 'Register 20 oracles');
     });
 
-    it(' 👑 (passenger) can buy insurance', async () => {
+    it('✈️ 💸 (passenger) can buy insurance', async () => {
         let result = true;
 
         try {
@@ -252,7 +253,7 @@ contract('Flight Surety Tests', async (accounts) => {
         assert.equal(result, true, 'Passenger should be able to buy insurance');
     });
 
-    it('(oracle) submit airline delay status and refund passenger', async () => {
+    it('✈️ 💰 (oracle) submit airline delay status and refund passenger', async () => {
         let result = true;
 
         await config.flightSuretyApp.fetchFlightStatus(config.firstAirline, flight, timestamp);
@@ -281,7 +282,7 @@ contract('Flight Surety Tests', async (accounts) => {
         assert.equal(result, true, 'Passenger can have their insurance credited');
     });
 
-    it('(passenger) withdraw', async () => {
+    it('✈️ 💸 (passenger) withdraw', async () => {
         let result = false;
 
         try {

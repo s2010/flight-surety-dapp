@@ -197,12 +197,12 @@ contract FlightSuretyData {
      *  @dev Credits payouts to insurees
     */
     function creditInsurance
-            (
-                address passengerAddress,
-                uint256 amount,
-                bytes32 flight
-            )
-            external
+        (
+            address passengerAddress,
+            uint256 amount,
+            bytes32 flight
+        )
+        external
     {
         passengers[passengerAddress][flight].insuranceCredit = amount;
     }
